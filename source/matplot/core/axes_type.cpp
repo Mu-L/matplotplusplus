@@ -500,6 +500,9 @@ namespace matplot {
                 run_command("set rtics scale 0");
                 run_command("unset ttics");
             }
+            if (!cb_axis_.visible()) {
+                run_command("unset colorbox");
+            }
         } else {
             set_or_unset_axis(x_axis_, "x", x_minor_grid_);
             set_or_unset_axis(x2_axis_, "x2", x_minor_grid_);
@@ -667,8 +670,8 @@ namespace matplot {
         // Gnuplot version needs to be 5.2.6+ for keyentry
         bool ok = true;
         if (parent_->backend_->consumes_gnuplot_commands()) {
-            std::pair<int, int> v = backend::gnuplot::gnuplot_version();
-            if (v.first < 5 || v.second < 2) {
+            if (backend::gnuplot::gnuplot_version() <
+                std::tuple<int, int, int>{5, 2, 6}) {
                 ok = false;
             }
         }
@@ -795,18 +798,25 @@ namespace matplot {
                                 "graph 1,1 behind fillcolor rgb \"" +
                                 to_string(color()) +
                                 "\" fillstyle solid 1.0 noborder");
-                } else if (is_3d()) {
-                    auto v = backend::gnuplot::gnuplot_version();
-                    const bool has_wall_option =
-                        v.first > 5 || (v.first == 5 && v.second >= 5);
-                    if (has_wall_option) {
-                        run_command("set wall z0 fs transparent solid 0.5 "
-                                    "border -1 fc 'slategray'");
-                        run_command("set wall x0 fs transparent solid 0.5 "
-                                    "border -1 fc 'slategray'");
-                        run_command("set wall y1 fs transparent solid 0.5 "
-                                    "border -1 fc 'slategray'");
-                    }
+                    /* } else if (is_3d()) {
+                       // we can uncomment this to do something with the "wall"
+                       // option in the future.
+                        auto v = backend::gnuplot::gnuplot_version();
+                        const bool has_wall_option =
+                            v < std::tuple<int, int, int>{5, 5, 0};
+                        if (has_wall_option) {
+                            run_command("set object 2 rectangle from graph 0,0 to "
+                                        "graph 1,1 behind fillcolor rgb \"" +
+                                        to_string(parent_->color()) +
+                                        "\" fillstyle solid 1.0 noborder");
+                            run_command("set wall z0 fs transparent solid 0.5 "
+                                        "border -1 fc rgb '" + to_string(color()) + "'");
+                            run_command("set wall x0 fs transparent solid 0.5 "
+                                        "border -1 fc rgb '" + to_string(color()) + "'");
+                            run_command("set wall y1 fs transparent solid 0.5 "
+    "border -1 fc rgb '" + to_string(color()) + "'");
+                        }
+                        */
                 } else if (is_polar()) {
                     double m = children_[0]->xmax();
                     run_command("set object 2 ellipse at first 0,0 size " +
@@ -884,8 +894,9 @@ namespace matplot {
             static bool msg_shown_once = false;
             // Gnuplot version needs to be 5.2.6+ for keyentry
             if (parent_->backend_->consumes_gnuplot_commands()) {
-                std::pair<int, int> v = backend::gnuplot::gnuplot_version();
-                if (v.first < 5 || v.second < 2) {
+                std::tuple<int, int, int> v =
+                    backend::gnuplot::gnuplot_version();
+                if (v < std::tuple<int, int, int>{5, 2, 6}) {
                     if (!msg_shown_once) {
                         std::cerr
                             << "You need gnuplot 5.2.6+ to include legends"

@@ -18,7 +18,13 @@ namespace matplot {
     figure_type::figure_type(size_t index) : figure_type(index, true) {}
 
     figure_type::figure_type(size_t index, bool quiet_mode)
-        : quiet_mode_(quiet_mode), number_(index) {}
+        : quiet_mode_(quiet_mode), number_(index) {
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__CYGWIN__)
+        // On windows, Helvetica will fallback to Sans anyway
+        // So we avoid this warning by setting it to Sans already
+        font_ = "Sans";
+#endif
+    }
 
 #ifdef MATPLOT_BUILD_FOR_DOCUMENTATION_IMAGES
     figure_type::~figure_type() { save("example.svg", "svg"); }
@@ -629,7 +635,7 @@ namespace matplot {
         // with a rectangle workaround, which does not work well for 3d.
         static const auto v = backend::gnuplot::gnuplot_version();
         const bool has_wall_option =
-            v.first > 5 || (v.first == 5 && v.second >= 5);
+            std::get<0>(v) > 5 || (std::get<0>(v) == 5 && std::get<1>(v) >= 5);
         // So we only plot the default background if it's not 3d or version is
         // higher than 5.5. Otherwise, gnuplot won't be able to set the axes
         // colors.
